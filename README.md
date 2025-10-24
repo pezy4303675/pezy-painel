@@ -160,7 +160,7 @@ FeaturesContainer.Position = UDim2.new(0, 10, 0, 90)
 FeaturesContainer.BackgroundTransparency = 1
 FeaturesContainer.BorderSizePixel = 0
 FeaturesContainer.ScrollBarThickness = 6
-FeaturesContainer.CanvasSize = UDim2.new(0, 0, 0, 1600)
+FeaturesContainer.CanvasSize = UDim2.new(0, 0, 0, 1680)
 FeaturesContainer.Parent = MainFrame
 
 -- ========================================
@@ -237,6 +237,7 @@ local JumpButton = CreateFeatureButton("Infinite Jump", "🚀", 800)
 local FullBrightButton = CreateFeatureButton("Full Bright", "💡", 880)
 local AntiAFKButton = CreateFeatureButton("Anti AFK", "⏰", 960)
 local AutoFarmButton = CreateFeatureButton("Auto Farm", "🌾", 1040)
+local TeleportButton = CreateFeatureButton("Teleport to Player", "📍", 1120)
 
 -- ========================================
 -- SISTEMA DE ESP COM DRAWING
@@ -442,7 +443,6 @@ local function GetClosestPlayerInFOV()
     local closestPlayer = nil
     local shortestDistance = math.huge
     local camera = workspace.CurrentCamera
-    -- Centro da tela ao invés da posição do mouse
     local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     
     for _, player in pairs(Players:GetPlayers()) do
@@ -468,10 +468,8 @@ local function GetClosestPlayerInFOV()
                     end
                     
                     local screenPoint = Vector2.new(screenPos.X, screenPos.Y)
-                    -- Calcula distância do centro da tela (sempre usa o FOV, mesmo invisível)
                     local distance = (screenPoint - screenCenter).Magnitude
                     
-                    -- Sempre usa o FOVSize, independente do círculo estar visível
                     if distance < Config.Aimbot.FOVSize and distance < shortestDistance then
                         closestPlayer = player
                         shortestDistance = distance
@@ -484,15 +482,12 @@ local function GetClosestPlayerInFOV()
     return closestPlayer
 end
 
--- Função para mover o mouse suavemente (CORRIGIDO)
 local function MoveMouse(targetPos)
     local currentMousePos = UserInputService:GetMouseLocation()
     
-    -- Calcula a diferença entre posição atual e alvo
     local deltaX = (targetPos.X - currentMousePos.X) * Config.Aimbot.Smoothness
     local deltaY = (targetPos.Y - currentMousePos.Y) * Config.Aimbot.Smoothness
     
-    -- Move o mouse usando mousemoverel (compatível com a maioria dos executores)
     pcall(function()
         if mousemoverel then
             mousemoverel(deltaX, deltaY)
@@ -513,12 +508,10 @@ local function AimbotLoop()
             local camera = workspace.CurrentCamera
             local targetPosition = targetPart.Position
             
-            -- Move a câmera suavemente
             local currentCFrame = camera.CFrame
             local targetCFrame = CFrame.new(currentCFrame.Position, targetPosition)
             camera.CFrame = currentCFrame:Lerp(targetCFrame, Config.Aimbot.Smoothness)
             
-            -- Move o mouse para a posição do alvo na tela
             local screenPos, onScreen = camera:WorldToViewportPoint(targetPosition)
             if onScreen and screenPos.Z > 0 then
                 local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
@@ -873,7 +866,6 @@ AimbotButton.MouseButton1Click:Connect(function()
         AimbotButton.Status.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
         print("🎯 Aimbot Ativado! (Camera + Mouse)")
         
-        -- Aviso se FOV Circle estiver desligado
         if not Config.Aimbot.FOVCircle then
             print("⚠️ RECOMENDAÇÃO: Ative o FOV Circle para melhor precisão!")
             print("⚠️ Use o botão 'FOV Circle' para visualizar a área de detecção")
@@ -1082,6 +1074,163 @@ AutoFarmButton.MouseButton1Click:Connect(function()
 end)
 
 -- ========================================
+-- BOTÃO DE TELEPORTE (ÚNICO ADICIONADO)
+-- ========================================
+local TeleportMenuOpen = false
+local TeleportMenu
+
+TeleportButton.MouseButton1Click:Connect(function()
+    if not Config.MainEnabled then return end
+    
+    TeleportMenuOpen = not TeleportMenuOpen
+    
+    if TeleportMenuOpen then
+        TeleportButton.Status.Text = "OPEN"
+        TeleportButton.Status.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+        
+        if not TeleportMenu then
+            TeleportMenu = Instance.new("Frame")
+            TeleportMenu.Name = "TeleportMenu"
+            TeleportMenu.Size = UDim2.new(0, 300, 0, 400)
+            TeleportMenu.Position = UDim2.new(0.5, 160, 0.5, -200)
+            TeleportMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+            TeleportMenu.BorderSizePixel = 0
+            TeleportMenu.Parent = ScreenGui
+            
+            local MenuCorner = Instance.new("UICorner")
+            MenuCorner.CornerRadius = UDim.new(0, 12)
+            MenuCorner.Parent = TeleportMenu
+            
+            local MenuHeader = Instance.new("Frame")
+            MenuHeader.Size = UDim2.new(1, 0, 0, 50)
+            MenuHeader.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+            MenuHeader.BorderSizePixel = 0
+            MenuHeader.Parent = TeleportMenu
+            
+            local MenuHeaderCorner = Instance.new("UICorner")
+            MenuHeaderCorner.CornerRadius = UDim.new(0, 12)
+            MenuHeaderCorner.Parent = MenuHeader
+            
+            local MenuHeaderFix = Instance.new("Frame")
+            MenuHeaderFix.Size = UDim2.new(1, 0, 0, 12)
+            MenuHeaderFix.Position = UDim2.new(0, 0, 1, -12)
+            MenuHeaderFix.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+            MenuHeaderFix.BorderSizePixel = 0
+            MenuHeaderFix.Parent = MenuHeader
+            
+            local MenuTitle = Instance.new("TextLabel")
+            MenuTitle.Size = UDim2.new(1, -60, 1, 0)
+            MenuTitle.Position = UDim2.new(0, 15, 0, 0)
+            MenuTitle.BackgroundTransparency = 1
+            MenuTitle.Text = "📍 TELEPORT TO PLAYER"
+            MenuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+            MenuTitle.TextSize = 16
+            MenuTitle.Font = Enum.Font.GothamBold
+            MenuTitle.TextXAlignment = Enum.TextXAlignment.Left
+            MenuTitle.Parent = MenuHeader
+            
+            local CloseMenuButton = Instance.new("TextButton")
+            CloseMenuButton.Size = UDim2.new(0, 35, 0, 35)
+            CloseMenuButton.Position = UDim2.new(1, -45, 0.5, -17.5)
+            CloseMenuButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+            CloseMenuButton.Text = "X"
+            CloseMenuButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            CloseMenuButton.TextSize = 16
+            CloseMenuButton.Font = Enum.Font.GothamBold
+            CloseMenuButton.BorderSizePixel = 0
+            CloseMenuButton.Parent = MenuHeader
+            
+            local CloseMenuCorner = Instance.new("UICorner")
+            CloseMenuCorner.CornerRadius = UDim.new(0, 8)
+            CloseMenuCorner.Parent = CloseMenuButton
+            
+            CloseMenuButton.MouseButton1Click:Connect(function()
+                TeleportMenu.Visible = false
+                TeleportMenuOpen = false
+                TeleportButton.Status.Text = "OFF"
+                TeleportButton.Status.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+            end)
+            
+            local PlayerList = Instance.new("ScrollingFrame")
+            PlayerList.Size = UDim2.new(1, -20, 1, -70)
+            PlayerList.Position = UDim2.new(0, 10, 0, 60)
+            PlayerList.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+            PlayerList.BorderSizePixel = 0
+            PlayerList.ScrollBarThickness = 6
+            PlayerList.ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226)
+            PlayerList.Parent = TeleportMenu
+            
+            local PlayerListCorner = Instance.new("UICorner")
+            PlayerListCorner.CornerRadius = UDim.new(0, 8)
+            PlayerListCorner.Parent = PlayerList
+            
+            local PlayerListLayout = Instance.new("UIListLayout")
+            PlayerListLayout.Padding = UDim.new(0, 5)
+            PlayerListLayout.SortOrder = Enum.SortOrder.Name
+            PlayerListLayout.Parent = PlayerList
+            
+            local function UpdatePlayerList()
+                for _, child in pairs(PlayerList:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child:Destroy()
+                    end
+                end
+                
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer then
+                        local PlayerButton = Instance.new("TextButton")
+                        PlayerButton.Size = UDim2.new(1, -10, 0, 45)
+                        PlayerButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+                        PlayerButton.Text = player.Name
+                        PlayerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        PlayerButton.TextSize = 14
+                        PlayerButton.Font = Enum.Font.Gotham
+                        PlayerButton.BorderSizePixel = 0
+                        PlayerButton.Parent = PlayerList
+                        
+                        local PlayerButtonCorner = Instance.new("UICorner")
+                        PlayerButtonCorner.CornerRadius = UDim.new(0, 8)
+                        PlayerButtonCorner.Parent = PlayerButton
+                        
+                        PlayerButton.MouseButton1Click:Connect(function()
+                            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame
+                                    print("📍 Teleportado para " .. player.Name)
+                                    
+                                    PlayerButton.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
+                                    wait(0.3)
+                                    PlayerButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+                                else
+                                    print("❌ Personagem do jogador não encontrado!")
+                                end
+                            else
+                                print("❌ Seu personagem não foi encontrado!")
+                            end
+                        end)
+                    end
+                end
+                
+                PlayerList.CanvasSize = UDim2.new(0, 0, 0, PlayerListLayout.AbsoluteContentSize.Y + 10)
+            end
+            
+            UpdatePlayerList()
+            
+            Players.PlayerAdded:Connect(UpdatePlayerList)
+            Players.PlayerRemoving:Connect(UpdatePlayerList)
+        end
+        
+        TeleportMenu.Visible = true
+    else
+        TeleportButton.Status.Text = "OFF"
+        TeleportButton.Status.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+        if TeleportMenu then
+            TeleportMenu.Visible = false
+        end
+    end
+end)
+
+-- ========================================
 -- EVENTOS DE JOGADORES
 -- ========================================
 Players.PlayerAdded:Connect(function(player)
@@ -1113,7 +1262,6 @@ RunService.RenderStepped:Connect(function()
         
         if Config.Aimbot.FOVCircle and FOVCircle then
             local camera = workspace.CurrentCamera
-            -- FOV estático no centro da tela
             local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
             FOVCircle.Position = screenCenter
             FOVCircle.Radius = Config.Aimbot.FOVSize
@@ -1190,6 +1338,7 @@ print("   ✈️ Fly Mode")
 print("   💡 Full Bright")
 print("   ⏰ Anti AFK")
 print("   🌾 Auto Farm")
+print("   📍 Teleport to Player ⭐ NOVO")
 print("========================================")
 print("🎮 Aimbot MELHORADO:")
 print("   ✓ Camera aponta para o alvo")
